@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-mongoose.connect('mongodb://127.0.0.1/testDB');
+mongoose.connect(process.env.DATABASE_URL || 'mongodb://127.0.0.1/testDB');
 
 import express from "express";
 import createError from "http-errors";
