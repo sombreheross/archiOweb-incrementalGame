@@ -166,15 +166,3 @@ Pour arrêter MongoDB, utilise cette commande :
 ```bash
 brew services stop mongodb-community@7.0
 ```
-
----
-
-## **Contributeurs**
-
-- **Nom** : [Ton GitHub](https://github.com/ton-profil)
-- **Contact** : [email@example.com](mailto\:email@example.com)
-
----
-
-Avec ce fichier, les développeurs peuvent facilement démarrer et tester ton application. 😊
-
