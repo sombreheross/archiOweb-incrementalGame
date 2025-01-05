@@ -55,8 +55,8 @@ MongoDB crée automatiquement la base de données `testDB` si elle n'existe pas 
 Clone le projet et accède au répertoire :
 
 ```bash
-git clone https://github.com/ton-repo.git
-cd ton-repo
+git clone https://github.com/sombreheross/archiOweb-incrementalGame.git
+cd archiOweb-incrementalGame
 ```
 
 ### Étape 2 : Installer les dépendances
