@@ -6,9 +6,9 @@ Ce projet met en place une API basée sur **Express** connectée à **MongoDB** 
 
 ## **Prérequis**
 
-1. **Node.js** et **npm** installés.
-2. **MongoDB Community Edition 7.0** installé et fonctionnel.
-3. **brew** (si utilisateur sous macOS).
+1. **Node.js** et **npm** installés
+2. **MongoDB Community Edition 7.0** installé et fonctionnel
+3. **brew** (si utilisateur sous macOS)
 
 ---
 
@@ -67,73 +67,83 @@ Installe les modules nécessaires via npm :
 npm install
 ```
 
-### Étape 3 : Lancer l'application
+### Étape 3 : Configuration des variables d'environnement
+
+Crée un fichier `.env` avec :
+
+```bash
+JWT_SECRET=votre_secret_jwt
+DATABASE_URL=mongodb://127.0.0.1/testDB
+PORT=3000
+```
+
+### Étape 4 : Lancer l'application
 
 Démarre l'application avec Node.js :
 
 ```bash
-npm run dev
+npm start
 ```
 
 ---
 
-## **API**
+## **API Endpoints**
 
-### Endpoints disponibles
+### Authentication
+- **POST** `/users/register` : Créer un nouveau compte
+  - Body: `{ "username": "string", "password": "string" }`
 
-#### 1. Index (`/`)
+- **POST** `/users/login` : Se connecter
+  - Body: `{ "username": "string", "password": "string" }`
+  - Returns: `{ "token": "jwt_token" }`
 
-- **GET** `/` : Point d'entrée principal de l'API.
+### Resources
+- **GET** `/resources` : Liste toutes les ressources
+- **POST** `/resources` : Crée une nouvelle ressource
+  - Body: `{ "name": "string", "price": number }`
+- **GET** `/resources/:id` : Obtient une ressource spécifique
+- **PATCH** `/resources/:id` : Met à jour le prix d'une ressource
+  - Body: `{ "price": number }`
+- **DELETE** `/resources/:id` : Supprime une ressource
 
-#### 2. Utilisateurs (`/users`)
+### User Resources (Routes Protégées)
+Nécessite le header Authorization: `Bearer <token>`
 
-- **GET** `/users` : Récupère tous les utilisateurs.
-- **POST** `/users` : Crée un nouvel utilisateur.
-
-#### 3. Ressources (`/resources`)
-
-- **GET** `/resources` : Récupère toutes les ressources.
-- **POST** `/resources` : Crée une nouvelle ressource.
-
----
-
-## **Connexion MongoDB**
-
-L'application se connecte à MongoDB via Mongoose avec l'URL suivante, définie dans le fichier `app.js` :
-
-```javascript
-mongoose.connect('mongodb://127.0.0.1/testDB');
-```
-
-### Vérification de la connexion
-
-- Si la connexion réussit, tu verras un message dans la console lors du démarrage de l'application indiquant que le serveur écoute.
-- En cas d'échec, assure-toi que :
-  - MongoDB est bien démarré (`brew services start mongodb-community@7.0`).
-  - L'adresse et le port dans `mongoose.connect` sont corrects (`127.0.0.1` est l'adresse par défaut pour localhost).
+- **GET** `/resources/:id/resource` : Obtient la quantité d'une ressource pour l'utilisateur authentifié
+- **POST** `/resources/:id/resource` : Crée un lien entre l'utilisateur et une ressource
+  - Body: `{ "amount": number }`
+- **PATCH** `/resources/:id/resource` : Met à jour la quantité d'une ressource pour l'utilisateur
+  - Body: `{ "amount": number }`
 
 ---
 
-## **Insertion des données**
+## **Structure de la Base de Données**
 
-### Exemple d'insertion dans MongoDB
+### Collections
 
-#### 1. Créer des utilisateurs
-
+#### Users
 ```javascript
-db.User.insertMany([
-  { _id: 1, username: "john_doe", password: "password123" },
-  { _id: 2, username: "jane_smith", password: "securePass!" }
-])
+{
+  username: String,  // required, unique
+  password: String   // hashed
+}
 ```
 
-#### 2. Créer des ressources
-
+#### Resources
 ```javascript
-db.Resource.insertMany([
-  { _id: 1, name: "Gold", price: 1.0 },
-  { _id: 2, name: "Energy", price: 1.0 }
-])
+{
+  name: String,    // required
+  price: Number    // required
+}
+```
+
+#### UserResources
+```javascript
+{
+  user_id: ObjectId,     // ref: 'User'
+  resource_id: ObjectId, // ref: 'Resource'
+  amount: Number         // default: 0
+}
 ```
 
 ---
@@ -147,9 +157,9 @@ db.NomDeLaCollection.find().pretty()
 ```
 
 Exemples :
-
 - Utilisateurs : `db.User.find().pretty()`
 - Ressources : `db.Resource.find().pretty()`
+- Liens User-Resource : `db.UserResource.find().pretty()`
 
 ### 2. Compter les documents
 
