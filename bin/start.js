@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import 'dotenv/config'; // Charge les variables d'environnement depuis .env
 import createDebugger from "debug";
 import http from "node:http";
 
