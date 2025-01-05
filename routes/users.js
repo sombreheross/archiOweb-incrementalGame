@@ -10,12 +10,12 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Route d'inscription
 router.post('/register', async (req, res, next) => {
-    const { name, username, password } = req.body;
+    const { username, password } = req.body;
     try {
         const userExists = await User.findOne({ username });
         if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-        const newUser = new User({ name, username, password });
+        const newUser = new User({ username, password });
         await newUser.save();
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
