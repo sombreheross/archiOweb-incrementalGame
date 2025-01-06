@@ -7,6 +7,7 @@ import logger from "morgan";
 import indexRouter from "./routes/index.js";
 import usersRouter from "./routes/users.js";
 import resourcesRouter from "./routes/resources.js";
+import upgradesRouter from "./routes/upgrades.js";
 
 // Validate DATABASE_URL
 const databaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mongodb')
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/resources", resourcesRouter);
+app.use("/upgrades", upgradesRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
