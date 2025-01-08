@@ -1,12 +1,12 @@
 import express from "express";
 import Resource from "../models/Resource.js";
 import UserResource from "../models/UserResource.js";
-import { protect } from "../middleware/auth.js";
+import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
 
 /* GET resources listing. */
-router.get("/", (req, res, next) => {
+router.get("/", protect, (req, res, next) => {
   Resource.find()
     .sort("name") // Trier par nom
     .exec()
@@ -19,7 +19,7 @@ router.get("/", (req, res, next) => {
 });
 
 /* POST new resource */
-router.post("/", (req, res, next) => {
+router.post("/", protect, adminOnly, (req, res, next) => {
   const newResource = new Resource(req.body);
 
   newResource.save()
@@ -32,7 +32,7 @@ router.post("/", (req, res, next) => {
 });
 
 /* GET resource by ID */
-router.get("/:id", (req, res, next) => {
+router.get("/:id", protect, (req, res, next) => {
   Resource.findById(req.params.id)
     .then(resource => {
       if (!resource) return res.status(404).send("Resource not found");
@@ -44,7 +44,7 @@ router.get("/:id", (req, res, next) => {
 });
 
 /* DELETE resource by ID */
-router.delete("/:id", (req, res, next) => {
+router.delete("/:id", protect, adminOnly, (req, res, next) => {
   Resource.findByIdAndDelete(req.params.id)
     .then(deletedResource => {
       if (!deletedResource) return res.status(404).send("Resource not found");
@@ -56,7 +56,7 @@ router.delete("/:id", (req, res, next) => {
 });
 
 /* PUT (update) resource by ID */
-router.put("/:id", (req, res, next) => {
+router.put("/:id", protect, adminOnly, (req, res, next) => {
   Resource.findByIdAndUpdate(req.params.id, req.body, { new: true })
     .then(updatedResource => {
       if (!updatedResource) return res.status(404).send("Resource not found");
@@ -165,7 +165,7 @@ router.patch("/:id/resource", protect, async (req, res, next) => {
 });
 
 /* PATCH (update) resource price */
-router.patch("/:id", (req, res, next) => {
+router.patch("/:id", protect, adminOnly, (req, res, next) => {
   // Only allow price updates
   const { price } = req.body;
   
@@ -185,6 +185,65 @@ router.patch("/:id", (req, res, next) => {
     .catch(err => {
       next(err);
     });
+});
+
+/* GET resource statistics per user */
+router.get("/stats", protect, async (req, res, next) => {
+  try {
+    const stats = await UserResource.aggregate([
+      {
+        $lookup: {
+          from: "resources",
+          localField: "resource_id",
+          foreignField: "_id",
+          as: "resource"
+        }
+      },
+      {
+        $unwind: "$resource"
+      },
+      {
+        $group: {
+          _id: "$user_id",
+          totalResources: { $sum: "$amount" },
+          totalValue: { $sum: { $multiply: ["$amount", "$resource.price"] } },
+          resourceCount: { $sum: 1 },
+          resources: {
+            $push: {
+              name: "$resource.name",
+              amount: "$amount",
+              value: { $multiply: ["$amount", "$resource.price"] }
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+      {
+        $unwind: "$user"
+      },
+      {
+        $project: {
+          _id: 0,
+          username: "$user.username",
+          totalResources: 1,
+          totalValue: 1,
+          resourceCount: 1,
+          resources: 1
+        }
+      }
+    ]);
+
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

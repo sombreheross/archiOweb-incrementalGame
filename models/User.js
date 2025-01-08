@@ -7,17 +7,22 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema({
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    admin: { type: Boolean, default: false },
     position: {
         type: {
             type: String,
             enum: ['Point'],
-            required: true
+            required: false
         },
         coordinates: {
             type: [Number],
-            required: true,
+            required: false,
             validate: {
-                validator: validateGeoJsonCoordinates,
+                validator: function(value) {
+                    // Only validate if coordinates are provided
+                    if (!value || value.length === 0) return true;
+                    return validateGeoJsonCoordinates(value);
+                },
                 message: '{VALUE} is not a valid longitude/latitude(/altitude) coordinates array'
             }
         }
