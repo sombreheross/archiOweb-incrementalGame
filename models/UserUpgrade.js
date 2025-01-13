@@ -9,7 +9,7 @@ const userUpgradeSchema = new Schema({
     required: true 
   },
   upgrade_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
+    type: Number,
     ref: 'Upgrade',
     required: true 
   }

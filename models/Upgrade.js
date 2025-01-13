@@ -3,6 +3,10 @@ import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 
 const upgradeSchema = new Schema({
+  _id: { 
+    type: Number,
+    required: true
+  },
   name: { 
     type: String, 
     required: true 
@@ -16,8 +20,7 @@ const upgradeSchema = new Schema({
     required: true 
   },
   unlockLevel: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Upgrade',
+    type: Number,
     default: null
   }
 });
