@@ -135,3 +135,6 @@ dist
 ._*
 .Spotlight-V100
 .Trashes
+
+# Project specific files
+data.json
