@@ -8,14 +8,15 @@ const router = express.Router();
 /* GET resources listing. */
 router.get("/", protect, (req, res, next) => {
   Resource.find()
-    .sort("name") // Trier par nom
+    .sort("name")
     .exec()
     .then(resources => {
-      res.send(resources);
+      res.status(200).json({
+        status: 'success',
+        data: resources
+      });
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(next);
 });
 
 /* POST new resource */
@@ -24,9 +25,18 @@ router.post("/", protect, adminOnly, (req, res, next) => {
 
   newResource.save()
     .then(savedResource => {
-      res.send(savedResource);
+      res.status(201).json({
+        status: 'success',
+        data: savedResource
+      });
     })
     .catch(err => {
+      if (err.code === 11000) { // Duplicate key error
+        return res.status(409).json({
+          status: 'error',
+          message: 'Resource already exists'
+        });
+      }
       next(err);
     });
 });
@@ -35,24 +45,33 @@ router.post("/", protect, adminOnly, (req, res, next) => {
 router.get("/:id", protect, (req, res, next) => {
   Resource.findById(req.params.id)
     .then(resource => {
-      if (!resource) return res.status(404).send("Resource not found");
-      res.send(resource);
+      if (!resource) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Resource not found'
+        });
+      }
+      res.status(200).json({
+        status: 'success',
+        data: resource
+      });
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(next);
 });
 
 /* DELETE resource by ID */
 router.delete("/:id", protect, adminOnly, (req, res, next) => {
   Resource.findByIdAndDelete(req.params.id)
     .then(deletedResource => {
-      if (!deletedResource) return res.status(404).send("Resource not found");
-      res.send(deletedResource);
+      if (!deletedResource) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Resource not found'
+        });
+      }
+      res.status(204).send(); // No content for successful deletion
     })
-    .catch(err => {
-      next(err);
-    });
+    .catch(next);
 });
 
 /* PUT (update) resource by ID */

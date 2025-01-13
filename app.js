@@ -21,6 +21,10 @@ mongoose.connect(databaseUrl)
 
 const app = express();
 
+// Middleware pour les headers
+import headers from './middleware/headers.js';
+app.use(headers);
+
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
