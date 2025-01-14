@@ -9,7 +9,7 @@ const userResourceSchema = new Schema({
     required: true 
   },
   resource_id: { 
-    type: number, 
+    type: Number, 
     ref: 'Resource',
     required: true 
   },
