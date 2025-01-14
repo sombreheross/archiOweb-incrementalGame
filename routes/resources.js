@@ -268,21 +268,24 @@ router.get("/stats", protect, async (req, res, next) => {
 /* POST initialize all resources for authenticated user */
 router.post("/init", protect, async (req, res, next) => {
   try {
-    // Récupérer toutes les ressources
+    // Log pour voir les ressources trouvées
     const resources = await Resource.find();
+    console.log('Resources found:', resources);
     
-    // Préparer les liens utilisateur-ressources
+    // Log pour voir les liens à créer
     const userResources = resources.map(resource => ({
       user_id: req.user.id,
       resource_id: resource._id,
       amount: 0
     }));
+    console.log('User resources to create:', userResources);
 
-    // Insérer tous les liens, ignorer les doublons
-    await UserResource.insertMany(userResources, {
+    // Log pour voir le résultat de l'insertion
+    const result = await UserResource.insertMany(userResources, {
       ordered: false,
       skipDuplicates: true
     });
+    console.log('Insert result:', result);
 
     // Récupérer les liens créés avec les détails des ressources
     const createdLinks = await UserResource.find({ user_id: req.user.id })
@@ -298,6 +301,7 @@ router.post("/init", protect, async (req, res, next) => {
       }))
     });
   } catch (err) {
+    console.error('Error:', err);
     next(err);
   }
 });
