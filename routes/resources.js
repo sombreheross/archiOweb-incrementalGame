@@ -306,4 +306,27 @@ router.post("/init", protect, async (req, res, next) => {
   }
 });
 
+/* GET all resources with amounts for authenticated user */
+router.get("/user/resources", protect, async (req, res, next) => {
+  try {
+    const userResources = await UserResource.find({ user_id: req.user.id })
+      .populate('resource_id')
+      .sort('resource_id.name');
+
+    const formattedResources = userResources.map(userResource => ({
+      resourceId: userResource.resource_id._id,
+      name: userResource.resource_id.name,
+      price: userResource.resource_id.price,
+      amount: userResource.amount
+    }));
+
+    res.json({
+      status: 'success',
+      data: formattedResources
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
