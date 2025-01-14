@@ -9,7 +9,7 @@ const userResourceSchema = new Schema({
     required: true 
   },
   resource_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
+    type: number, 
     ref: 'Resource',
     required: true 
   },
