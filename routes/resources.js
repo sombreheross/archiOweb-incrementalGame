@@ -268,8 +268,8 @@ router.get("/stats", protect, async (req, res, next) => {
 /* POST initialize all resources for authenticated user */
 router.post("/init", protect, async (req, res, next) => {
   try {
-    // Log pour voir les ressources trouvées
-    const resources = await Resource.find();
+    // On s'assure juste que _id est bien sélectionné
+    const resources = await Resource.find().select('_id');
     console.log('Resources found:', resources);
     
     // Log pour voir les liens à créer
