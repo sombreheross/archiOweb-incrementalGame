@@ -6,18 +6,25 @@ import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 // Route d'inscription
 router.post('/register', async (req, res, next) => {
     const { username, password } = req.body;
     try {
+        // Vérifier si l'utilisateur existe déjà
         const userExists = await User.findOne({ username });
         if (userExists) return res.status(400).json({ message: 'User already exists' });
 
+        // Créer le nouvel utilisateur
         const newUser = new User({ username, password });
         await newUser.save();
-        res.status(201).json({ message: 'User registered successfully' });
+
+        // Générer le token
+        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.status(201).json({ 
+            message: 'User registered successfully',
+            token 
+        });
     } catch (err) {
         next(err);
     }
@@ -43,6 +50,32 @@ router.post('/login', async (req, res, next) => {
 // Exemple de route protégée
 router.get('/protected', protect, (req, res) => {
     res.json({ message: 'Welcome to the protected route', user: req.user });
+});
+
+// Route pour modifier le statut dynamo
+router.patch('/dynamo', protect, async (req, res) => {
+    try {
+        if (typeof req.body.dynamo !== 'boolean') {
+            return res.status(400).json({ 
+                message: 'dynamo must be a boolean value (true or false)' 
+            });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.dynamo = req.body.dynamo;
+        await user.save();
+
+        res.json({ 
+            message: 'Dynamo status updated',
+            dynamo: user.dynamo 
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
 export default router;

@@ -265,4 +265,41 @@ router.get("/stats", protect, async (req, res, next) => {
   }
 });
 
+/* POST initialize all resources for authenticated user */
+router.post("/init", protect, async (req, res, next) => {
+  try {
+    // Récupérer toutes les ressources
+    const resources = await Resource.find();
+    
+    // Préparer les liens utilisateur-ressources
+    const userResources = resources.map(resource => ({
+      user_id: req.user.id,
+      resource_id: resource._id,
+      amount: 0
+    }));
+
+    // Insérer tous les liens, ignorer les doublons
+    await UserResource.insertMany(userResources, {
+      ordered: false,
+      skipDuplicates: true
+    });
+
+    // Récupérer les liens créés avec les détails des ressources
+    const createdLinks = await UserResource.find({ user_id: req.user.id })
+      .populate('resource_id');
+
+    res.status(201).json({
+      userId: req.user.id,
+      resources: createdLinks.map(link => ({
+        resourceId: link.resource_id._id,
+        name: link.resource_id.name,
+        price: link.resource_id.price,
+        amount: link.amount
+      }))
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

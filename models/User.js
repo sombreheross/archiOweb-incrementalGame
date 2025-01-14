@@ -27,10 +27,10 @@ const userSchema = new Schema({
             }
         }
     },
-    profile_pic: {
-        type: String,
+    dynamo: {
+        type: Boolean,
         required: false,
-        default: null
+        default: false
     }
 });
 
