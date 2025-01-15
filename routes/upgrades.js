@@ -74,6 +74,55 @@ router.get("/", protect, async (req, res, next) => {
   }
 });
 
+/* GET next available upgrades */
+router.get("/next", protect, async (req, res, next) => {
+  try {
+    // Get all user's current upgrades
+    const userUpgrades = await UserUpgrade.find({
+      user_id: req.user.id
+    }).select('upgrade_id');
+
+    // Get user's upgrade IDs
+    const userUpgradeIds = userUpgrades.map(ug => ug.upgrade_id.toString());
+
+    // Get all upgrades
+    const allUpgrades = await Upgrade.find().sort('name');
+
+    // Find next available upgrade (has prerequisites met or no prerequisites)
+    const nextAvailable = allUpgrades.find(upgrade => {
+      const notOwned = !userUpgradeIds.includes(upgrade._id.toString());
+      const prerequisiteMet = !upgrade.unlockLevel || userUpgradeIds.includes(upgrade.unlockLevel.toString());
+      return notOwned && prerequisiteMet;
+    });
+
+    // Find next locked upgrade (has prerequisites not met)
+    const nextLocked = allUpgrades.find(upgrade => {
+      const notOwned = !userUpgradeIds.includes(upgrade._id.toString());
+      const prerequisiteNotMet = upgrade.unlockLevel && !userUpgradeIds.includes(upgrade.unlockLevel.toString());
+      return notOwned && prerequisiteNotMet;
+    });
+
+    res.json({
+      nextAvailable: nextAvailable ? {
+        id: nextAvailable._id,
+        name: nextAvailable.name,
+        production: nextAvailable.production,
+        price: nextAvailable.price,
+        unlockLevel: nextAvailable.unlockLevel
+      } : null,
+      nextLocked: nextLocked ? {
+        id: nextLocked._id,
+        name: nextLocked.name,
+        production: nextLocked.production,
+        price: nextLocked.price,
+        unlockLevel: nextLocked.unlockLevel
+      } : null
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* GET specific upgrade */
 router.get("/:id", protect, (req, res, next) => {
   Upgrade.findById(req.params.id)
@@ -133,55 +182,6 @@ router.post("/:id/buy", protect, async (req, res, next) => {
       name: savedUpgrade.upgrade_id.name,
       production: savedUpgrade.upgrade_id.production,
       price: savedUpgrade.upgrade_id.price
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/* GET next available upgrades */
-router.get("/next", protect, async (req, res, next) => {
-  try {
-    // Get all user's current upgrades
-    const userUpgrades = await UserUpgrade.find({
-      user_id: req.user.id
-    }).select('upgrade_id');
-
-    // Get user's upgrade IDs
-    const userUpgradeIds = userUpgrades.map(ug => ug.upgrade_id.toString());
-
-    // Get all upgrades
-    const allUpgrades = await Upgrade.find().sort('name');
-
-    // Find next available upgrade (has prerequisites met or no prerequisites)
-    const nextAvailable = allUpgrades.find(upgrade => {
-      const notOwned = !userUpgradeIds.includes(upgrade._id.toString());
-      const prerequisiteMet = !upgrade.unlockLevel || userUpgradeIds.includes(upgrade.unlockLevel.toString());
-      return notOwned && prerequisiteMet;
-    });
-
-    // Find next locked upgrade (has prerequisites not met)
-    const nextLocked = allUpgrades.find(upgrade => {
-      const notOwned = !userUpgradeIds.includes(upgrade._id.toString());
-      const prerequisiteNotMet = upgrade.unlockLevel && !userUpgradeIds.includes(upgrade.unlockLevel.toString());
-      return notOwned && prerequisiteNotMet;
-    });
-
-    res.json({
-      nextAvailable: nextAvailable ? {
-        id: nextAvailable._id,
-        name: nextAvailable.name,
-        production: nextAvailable.production,
-        price: nextAvailable.price,
-        unlockLevel: nextAvailable.unlockLevel
-      } : null,
-      nextLocked: nextLocked ? {
-        id: nextLocked._id,
-        name: nextLocked.name,
-        production: nextLocked.production,
-        price: nextLocked.price,
-        unlockLevel: nextLocked.unlockLevel
-      } : null
     });
   } catch (err) {
     next(err);
