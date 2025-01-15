@@ -31,9 +31,15 @@ router.get("/", protect, async (req, res, next) => {
   if (maxPrice) filter.price = { ...filter.price, $lte: parseFloat(maxPrice) };
   if (name) filter.name = new RegExp(name, 'i');
   if (owned !== undefined) {
-    // Convertit la chaîne 'true'/'false' en booléen
-    const isOwned = owned === 'true';
-    filter.ownedBy = isOwned ? req.user._id : { $ne: req.user._id };
+    // On doit d'abord récupérer les upgrades possédés par l'utilisateur
+    const userUpgrades = await UserUpgrade.find({ user_id: req.user._id });
+    const ownedUpgradeIds = userUpgrades.map(uu => uu.upgrade_id);
+    
+    if (owned === 'true') {
+      filter._id = { $in: ownedUpgradeIds };
+    } else {
+      filter._id = { $nin: ownedUpgradeIds };
+    }
   }
 
   console.log('Applied filters:', filter);
