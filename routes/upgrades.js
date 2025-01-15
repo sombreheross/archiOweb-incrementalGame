@@ -158,4 +158,40 @@ router.get("/next", protect, async (req, res, next) => {
   }
 });
 
+/* POST initialize all upgrades for authenticated user */
+router.post("/init", protect, async (req, res, next) => {
+  try {
+    // Get all upgrades
+    const upgrades = await Upgrade.find();
+    
+    // Create user-upgrade links with default values
+    const userUpgrades = upgrades.map(upgrade => ({
+      user_id: req.user.id,
+      upgrade_id: upgrade._id
+    }));
+
+    // Insert all links, skip duplicates
+    const result = await UserUpgrade.insertMany(userUpgrades, {
+      ordered: false,
+      skipDuplicates: true
+    });
+
+    // Get created links with upgrade details
+    const createdLinks = await UserUpgrade.find({ user_id: req.user.id })
+      .populate('upgrade_id');
+
+    res.status(201).json({
+      userId: req.user.id,
+      upgrades: createdLinks.map(link => ({
+        upgradeId: link.upgrade_id._id,
+        name: link.upgrade_id.name,
+        production: link.upgrade_id.production,
+        price: link.upgrade_id.price
+      }))
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router; 
