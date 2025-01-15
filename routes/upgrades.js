@@ -7,15 +7,19 @@ const router = express.Router();
 
 /* GET upgrades listing with pagination and filters */
 router.get("/", protect, async (req, res, next) => {
+  console.log('GET /upgrades - Query parameters:', req.query);
+  
   // Pagination
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  console.log('Pagination:', { page, limit, skip });
   
   // Tri
   const sortField = req.query.sort || 'name';
   const sortOrder = req.query.order || 'asc';
   const sortOptions = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
+  console.log('Sort options:', sortOptions);
   
   // Filtres optionnels
   const { minProduction, maxProduction, minPrice, maxPrice, name, owned } = req.query;
@@ -32,16 +36,23 @@ router.get("/", protect, async (req, res, next) => {
     filter.ownedBy = isOwned ? req.user._id : { $ne: req.user._id };
   }
 
+  console.log('Applied filters:', filter);
+
   try {
     let query = Upgrade.find(filter).sort(sortOptions);
     
-    // Si limit=0, on désactive la pagination
-    if (limit !== 0) {
+    if (limit > 0) {
       query = query.skip(skip).limit(limit);
+      console.log('Applying pagination with limit:', limit);
+    } else {
+      console.log('Pagination disabled');
     }
     
     const upgrades = await query;
+    console.log(`Found ${upgrades.length} upgrades`);
+    
     const total = await Upgrade.countDocuments(filter);
+    console.log('Total documents:', total);
     
     res.json({
       upgrades,
