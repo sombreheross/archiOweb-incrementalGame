@@ -12,6 +12,11 @@ router.get("/", protect, async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
   
+  // Tri
+  const sortField = req.query.sort || 'name';
+  const sortOrder = req.query.order || 'asc';
+  const sortOptions = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
+  
   // Filtres optionnels
   const { minProduction, maxProduction, minPrice, maxPrice, name, owned } = req.query;
   const filter = {};
@@ -28,16 +33,19 @@ router.get("/", protect, async (req, res, next) => {
   }
 
   try {
-    const upgrades = await Upgrade.find(filter)
-      .sort("name")
-      .skip(skip)
-      .limit(limit);
+    let query = Upgrade.find(filter).sort(sortOptions);
     
+    // Si limit=0, on désactive la pagination
+    if (limit !== 0) {
+      query = query.skip(skip).limit(limit);
+    }
+    
+    const upgrades = await query;
     const total = await Upgrade.countDocuments(filter);
     
     res.json({
       upgrades,
-      pagination: {
+      pagination: limit === 0 ? null : {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
         totalItems: total,
