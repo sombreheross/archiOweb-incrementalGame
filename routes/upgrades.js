@@ -85,21 +85,24 @@ router.get("/next", protect, async (req, res, next) => {
     // Get user's upgrade IDs
     const userUpgradeIds = userUpgrades.map(ug => ug.upgrade_id.toString());
 
-    // Get all upgrades
-    const allUpgrades = await Upgrade.find().sort('name');
+    // Get all upgrades sorted by price (pour avoir le moins cher en premier)
+    const allUpgrades = await Upgrade.find().sort('price');
 
-    // Find next available upgrade (has prerequisites met or no prerequisites)
+    // Find next available upgrade (has prerequisites met and lowest price)
     const nextAvailable = allUpgrades.find(upgrade => {
       const notOwned = !userUpgradeIds.includes(upgrade._id.toString());
       const prerequisiteMet = !upgrade.unlockLevel || userUpgradeIds.includes(upgrade.unlockLevel.toString());
       return notOwned && prerequisiteMet;
     });
 
-    // Find next locked upgrade (has prerequisites not met)
+    // Find next locked upgrade (closest prerequisite)
     const nextLocked = allUpgrades.find(upgrade => {
       const notOwned = !userUpgradeIds.includes(upgrade._id.toString());
-      const prerequisiteNotMet = upgrade.unlockLevel && !userUpgradeIds.includes(upgrade.unlockLevel.toString());
-      return notOwned && prerequisiteNotMet;
+      // On vérifie si le prérequis est le prochain niveau après ce qu'on possède
+      const prerequisiteIsNext = upgrade.unlockLevel && 
+        !userUpgradeIds.includes(upgrade.unlockLevel.toString()) &&
+        userUpgradeIds.includes((upgrade.unlockLevel - 1).toString());
+      return notOwned && prerequisiteIsNext;
     });
 
     res.json({
