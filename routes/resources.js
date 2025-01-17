@@ -69,7 +69,7 @@ router.delete("/:id", protect, adminOnly, (req, res, next) => {
           message: 'Resource not found'
         });
       }
-      res.status(204).send(); // No content for successful deletion
+      res.status(204).send(); // Successful deletion
     })
     .catch(next);
 });
@@ -280,12 +280,15 @@ router.post("/init", protect, async (req, res, next) => {
     }));
     console.log('User resources to create:', userResources);
 
-    // Log pour voir le résultat de l'insertion
-    const result = await UserResource.insertMany(userResources, {
-      ordered: false,
-      skipDuplicates: true
-    });
-    console.log('Insert result:', result);
+    const upsertUserResources = resources.map(resource => ({
+      updateOne: {
+        filter: { user_id: req.user.id, resource_id: resource._id },
+        update: { $setOnInsert: { amount: 0 } },
+        upsert: true
+      }
+    }));
+
+    await UserResource.bulkWrite(upsertUserResources);
 
     // Récupérer les liens créés avec les détails des ressources
     const createdLinks = await UserResource.find({ user_id: req.user.id })

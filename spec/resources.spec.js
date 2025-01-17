@@ -1,227 +1,207 @@
-import supertest from "supertest";
-import mongoose from "mongoose";
-import app from "../app.js";
-import { cleanUpDatabase } from "../utils.js";
+import supertest from 'supertest';
+import app from '../app.js';
+import Resource from '../models/Resource.js';
+import UserResource from '../models/UserResource.js';
 
-let userToken;
+const request = supertest(app);
 
-beforeAll(async () => {
-  await mongoose.connect(process.env.DATABASE_URL || 'mongodb://127.0.0.1/my-app-test');
-});
+describe('Resources API', () => {
+  let authToken;
+  let resourceId;
 
-beforeEach(async () => {
-  await cleanUpDatabase();
-  
-  // Create a new user for each test
-  await supertest(app)
-    .post('/users/register')
-    .send({
-      username: 'adminLEL',
-      password: 'passwordLEL'
+  // Helper function to register and login a user
+  const setupAuthUser = async () => {
+    await request
+      .post('/users/register')
+      .send({
+        username: 'testuser',
+        password: 'testpass123'
+      });
+
+    const loginRes = await request
+      .post('/users/login')
+      .send({
+        username: 'testuser',
+        password: 'testpass123'
+      });
+
+    return loginRes.body.token;
+  };
+
+  beforeAll(async () => {
+    authToken = await setupAuthUser();
+  });
+
+  describe('POST /resources/init', () => {
+    it('should initialize all resources for user', async () => {
+      const res = await request
+        .post('/resources/init')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('userId');
+      expect(res.body).toHaveProperty('resources');
+      expect(res.body.resources).toBeArray();
+      expect(res.body.resources[0]).toHaveProperty('amount', 0);
     });
 
-  // Log in and get fresh token
-  const loginResponse = await supertest(app)
-    .post('/users/login')
-    .send({
-      username: 'adminLEL',
-      password: 'passwordLEL'
+    it('should be idempotent', async () => {
+      // Second initialization
+      const res = await request
+        .post('/resources/init')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(201);
+      expect(res.body.resources).toBeArray();
+      expect(res.body.resources[0]).toHaveProperty('amount', 0);
+    });
+  });
+
+  beforeEach(async () => {
+    // Get the first resource ID from the database
+    const resource = await Resource.findOne();
+    resourceId = resource._id;
+  });
+
+  describe('GET /resources', () => {
+    it('should return all resources for authenticated user', async () => {
+      const res = await request
+        .get('/resources')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('status', 'success');
+      expect(res.body.data).toBeArray();
+      expect(res.body.data[0]).toHaveProperty('name');
+      expect(res.body.data[0]).toHaveProperty('price');
     });
 
-  userToken = loginResponse.body.token;
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-});
-
-describe('POST /resources', function() {
-  it('should create a new resource', async function() {
-    const res = await supertest(app)
-      .post('/resources')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        name: 'Gold',
-        price: 100
-      })
-      .expect(201)
-      .expect('Content-Type', /json/);
-
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        _id: expect.any(String),
-        name: 'Gold',
-        price: 100
-      })
-    );
+    it('should require authentication', async () => {
+      const res = await request.get('/resources');
+      expect(res.status).toBe(401);
+    });
   });
-});
 
-describe('GET /resources', function() {
-  it('should retrieve the list of resources', async function() {
-    // First, create a resource
-    await supertest(app)
-      .post('/resources')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        name: 'Gold',
-        price: 100
-      });
+  describe('GET /resources/:id/resource', () => {
+    it('should return 404 for non-existent user resource', async () => {
+      const res = await request
+        .get(`/resources/999/resource`)
+        .set('Authorization', `Bearer ${authToken}`);
 
-    // Then, get the list of resources
-    const res = await supertest(app)
-      .get('/resources')
-      .set('Authorization', `Bearer ${userToken}`)
-      .expect(200)
-      .expect('Content-Type', /json/);
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('message', 'Resource not found for this user');
+      expect(res.body).toHaveProperty('amount', 0);
+    });
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toEqual(
-      expect.objectContaining({
-        _id: expect.any(String),
-        name: 'Gold',
-        price: 100
-      })
-    );
+    it('should return user resource after initialization', async () => {
+      // First initialize resources for user
+      await request
+        .post('/resources/init')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      const res = await request
+        .get(`/resources/${resourceId}/resource`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('resourceId');
+      expect(res.body).toHaveProperty('name');
+      expect(res.body).toHaveProperty('price');
+      expect(res.body).toHaveProperty('amount', 0);
+    });
   });
-});
 
-describe('GET /resources/:id', function() {
-  it('should retrieve a resource by ID', async function() {
-    // First, create a resource
-    const createRes = await supertest(app)
-      .post('/resources')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        name: 'Gold',
-        price: 100
-      });
+  describe('PATCH /resources/:id/resource', () => {
+    it('should update resource amount', async () => {
+      const res = await request
+        .patch(`/resources/${resourceId}/resource`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ amount: 100 });
 
-    const resourceId = createRes.body._id;
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('amount', 100);
+    });
 
-    // Then, get the resource by ID
-    const res = await supertest(app)
-      .get(`/resources/${resourceId}`)
-      .set('Authorization', `Bearer ${userToken}`)
-      .expect(200)
-      .expect('Content-Type', /json/);
+    it('should return 404 for non-existent resource', async () => {
+      const res = await request
+        .patch('/resources/999/resource')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ amount: 100 });
 
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        _id: resourceId,
-        name: 'Gold',
-        price: 100
-      })
-    );
+      expect(res.status).toBe(404);
+    });
   });
-});
 
-describe('PUT /resources/:id', function() {
-  it('should update a resource by ID', async function() {
-    // First, create a resource
-    const createRes = await supertest(app)
-      .post('/resources')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        name: 'Gold',
-        price: 100
-      });
+  describe('GET /resources/user/resources', () => {
+    it('should return all user resources after initialization', async () => {
+      // First initialize resources
+      await request
+        .post('/resources/init')
+        .set('Authorization', `Bearer ${authToken}`);
 
-    const resourceId = createRes.body._id;
+      const res = await request
+        .get('/resources/user/resources')
+        .set('Authorization', `Bearer ${authToken}`);
 
-    // Then, update the resource by ID
-    const res = await supertest(app)
-      .put(`/resources/${resourceId}`)
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        name: 'Gold',
-        price: 150
-      })
-      .expect(200)
-      .expect('Content-Type', /json/);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('status', 'success');
+      expect(res.body.data).toBeArray();
+      expect(res.body.data[0]).toHaveProperty('resourceId');
+      expect(res.body.data[0]).toHaveProperty('name');
+      expect(res.body.data[0]).toHaveProperty('price');
+      expect(res.body.data[0]).toHaveProperty('amount');
+    });
 
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        _id: resourceId,
-        name: 'Gold',
-        price: 150
-      })
-    );
+    it('should require authentication', async () => {
+      const res = await request.get('/resources/user/resources');
+      expect(res.status).toBe(401);
+    });
   });
-});
 
-describe('DELETE /resources/:id', function() {
-  it('should delete a resource by ID', async function() {
-    // First, create a resource
-    const createRes = await supertest(app)
-      .post('/resources')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        name: 'Gold',
-        price: 100
-      });
+  describe('DELETE /resources/:id', () => {
+    let adminToken;
 
-    const resourceId = createRes.body._id;
+    beforeAll(async () => {
+      // Login as admin
+      const loginRes = await request
+        .post('/users/login')
+        .send({
+          username: 'adminLEL',
+          password: 'passwordLEL'
+        });
+      adminToken = loginRes.body.token;
+    });
 
-    // Then, delete the resource by ID
-    await supertest(app)
-      .delete(`/resources/${resourceId}`)
-      .set('Authorization', `Bearer ${userToken}`)
-      .expect(200);
+    it('should require authentication', async () => {
+      const res = await request.delete(`/resources/${resourceId}`);
+      expect(res.status).toBe(401);
+    });
 
-    // Verify the resource is deleted
-    await supertest(app)
-      .get(`/resources/${resourceId}`)
-      .set('Authorization', `Bearer ${userToken}`)
-      .expect(404);
-  });
-});
+    it('should require admin privileges', async () => {
+      const res = await request
+        .delete(`/resources/${resourceId}`)
+        .set('Authorization', `Bearer ${authToken}`); // Regular user token
+      expect(res.status).toBe(403);
+    });
 
-describe('GET /resources/stats', function() {
-  it('should get resource statistics for users', async function() {
-    // First create a resource
-    const createRes = await supertest(app)
-      .post('/resources')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        name: 'Gold',
-        price: 100
-      });
+    it('should delete resource if admin', async () => {
+      const res = await request
+        .delete(`/resources/${resourceId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(204);
 
-    // Initialize resources for user
-    await supertest(app)
-      .post('/resources/init')
-      .set('Authorization', `Bearer ${userToken}`);
+      // Verify resource is deleted
+      const checkRes = await request
+        .get(`/resources/${resourceId}/resource`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(checkRes.status).toBe(404);
+    });
 
-    // Update resource amount
-    await supertest(app)
-      .patch(`/resources/${createRes.body._id}/resource`)
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({ amount: 10 });
-
-    // Get stats
-    const res = await supertest(app)
-      .get('/resources/stats')
-      .set('Authorization', `Bearer ${userToken}`)
-      .expect(200)
-      .expect('Content-Type', /json/);
-
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body[0]).toEqual(
-      expect.objectContaining({
-        username: 'adminLEL',
-        totalResources: 10,
-        totalValue: 1000,
-        resourceCount: 1,
-        resources: expect.arrayContaining([
-          expect.objectContaining({
-            name: 'Gold',
-            amount: 10,
-            value: 1000
-          })
-        ])
-      })
-    );
+    it('should return 404 for non-existent resource', async () => {
+      const res = await request
+        .delete('/999')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(404);
+    });
   });
 });

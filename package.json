@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node ./bin/start",
-    "test": "cross-env DATABASE_URL=mongodb://127.0.0.1/my-app-test node --experimental-vm-modules node_modules/.bin/jest --coverage --runInBand"
+    "test": "cross-env DATABASE_URL=mongodb://127.0.0.1/automatedTestDB node --experimental-vm-modules node_modules/.bin/jest --coverage --runInBand"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -27,7 +27,8 @@
   },
   "jest": {
     "setupFilesAfterEnv": [
-      "jest-extended/all"
+      "jest-extended/all",
+      "./spec/setup.js"
     ]
   }
 }

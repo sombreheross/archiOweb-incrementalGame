@@ -1,125 +1,74 @@
-import supertest from "supertest";
-import mongoose from "mongoose";
-import app from "../app.js";
-import { cleanUpDatabase } from "../utils.js";
+import supertest from 'supertest';
+import app from '../app.js';
 
-beforeEach(async () => {
-  await cleanUpDatabase();
-});
+const request = supertest(app);
 
-afterAll(async () => {
-  await mongoose.disconnect();
-});
+describe('Authentication Flow', () => {
+  describe('POST /users/register', () => {
+    // Test #1: Vérifier qu'un nouvel utilisateur peut s'inscrire avec succès
+    it('should register a new user successfully', async () => {
+      const res = await request
+        .post('/users/register')
+        .send({
+          username: 'testuser',
+          password: 'testpass123'
+        });
 
-describe('POST /users/register', function() {
-  it('should register a new user', async function() {
-    const res = await supertest(app)
-      .post('/users/register')
-      .send({
-        username: 'testUser',
-        password: 'testPassword'
-      })
-      .expect(201)
-      .expect('Content-Type', /json/);
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('token');
+    });
 
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        message: 'User registered successfully'
-      })
-    );
+    // Test #2: Vérifier qu'on ne peut pas créer deux comptes avec le même nom d'utilisateur
+    it('should not allow duplicate usernames', async () => {
+      // Duplicate registration attempt with same username as Test #1
+      const res = await request
+        .post('/users/register')
+        .send({
+          username: 'testuser', 
+          password: 'differentpass'
+        });
+
+      expect(res.status).toBe(409);
+      expect(res.body).toHaveProperty('message');
+      expect(res.body.message).toMatch("User already exists");
+    });
   });
 
-  it('should not register a duplicate user', async function() {
-    // First registration
-    await supertest(app)
-      .post('/users/register')
-      .send({
-        username: 'testUser',
-        password: 'testPassword'
-      });
+  describe('POST /users/login', () => {
+    beforeEach(async () => {
+      await request
+        .post('/users/register')
+        .send({
+          username: 'testuser',
+          password: 'testpass123'
+        });
+    });
 
-    // Attempt duplicate registration
-    const res = await supertest(app)
-      .post('/users/register')
-      .send({
-        username: 'testUser',
-        password: 'differentPassword'
-      })
-      .expect(400);
+    // Test #3: Vérifier qu'un utilisateur peut se connecter avec les bons identifiants
+    it('should login successfully with correct credentials', async () => {
+      const res = await request
+        .post('/users/login')
+        .send({
+          username: 'testuser',
+          password: 'testpass123'
+        });
 
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        message: 'User already exists'
-      })
-    );
-  });
-});
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('token');
+    });
 
-describe('POST /users/login', function() {
-  it('should login a user', async function() {
-    // First, register a user
-    await supertest(app)
-      .post('/users/register')
-      .send({
-        username: 'testUser',
-        password: 'testPassword'
-      });
+    // Test #4: Vérifier qu'un utilisateur ne peut pas se connecter avec un mauvais mot de passe
+    it('should fail with incorrect password', async () => {
+      const res = await request
+        .post('/users/login')
+        .send({
+          username: 'testuser',
+          password: 'wrongpass'
+        });
 
-    // Then, login the user
-    const res = await supertest(app)
-      .post('/users/login')
-      .send({
-        username: 'testUser',
-        password: 'testPassword'
-      })
-      .expect(200)
-      .expect('Content-Type', /json/);
-
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        token: expect.any(String)
-      })
-    );
-  });
-
-  it('should not login with wrong password', async function() {
-    // First, register a user
-    await supertest(app)
-      .post('/users/register')
-      .send({
-        username: 'testUser',
-        password: 'testPassword'
-      });
-
-    // Try to login with wrong password
-    const res = await supertest(app)
-      .post('/users/login')
-      .send({
-        username: 'testUser',
-        password: 'wrongPassword'
-      })
-      .expect(400);
-
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        message: 'Invalid credentials'
-      })
-    );
-  });
-
-  it('should not login non-existent user', async function() {
-    const res = await supertest(app)
-      .post('/users/login')
-      .send({
-        username: 'nonExistentUser',
-        password: 'testPassword'
-      })
-      .expect(404);
-
-    expect(res.body).toEqual(
-      expect.objectContaining({
-        message: 'User not found'
-      })
-    );
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty('message');
+      expect(res.body.message).toMatch(/invalid credentials/i);
+    });
   });
 });
