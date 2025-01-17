@@ -72,3 +72,48 @@ describe('Authentication Flow', () => {
     });
   });
 });
+
+describe('User Position Management', () => {
+    let authToken;
+
+    beforeEach(async () => {
+        // Créer un utilisateur et récupérer le token
+        const res = await request
+            .post('/users/register')
+            .send({
+                username: 'positiontestuser',
+                password: 'testpass123'
+            });
+        authToken = res.body.token;
+    });
+
+    // Test #5: Vérifier la mise à jour de position avec des coordonnées valides
+    it('should update user position with valid coordinates', async () => {
+        const res = await request
+            .patch('/users/position')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({
+                longitude: 2.3488,
+                latitude: 48.8534
+            });
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('message', 'Position mise à jour');
+        expect(res.body.position).toEqual({
+            type: 'Point',
+            coordinates: [2.3488, 48.8534]
+        });
+    });
+
+    // Test #6: Vérifier que l'authentification est requise
+    it('should require authentication', async () => {
+        const res = await request
+            .patch('/users/position')
+            .send({
+                longitude: 2.3488,
+                latitude: 48.8534
+            });
+
+        expect(res.status).toBe(401);
+    });
+});

@@ -86,4 +86,36 @@ router.patch('/dynamo', protect, async (req, res) => {
     }
 });
 
+// Route pour modifier la position
+router.patch('/position', protect, async (req, res) => {
+    try {
+        const { longitude, latitude } = req.body;
+
+        if (typeof longitude !== 'number' || typeof latitude !== 'number') {
+            return res.status(400).json({ 
+                message: 'longitude et latitude doivent être des nombres' 
+            });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+
+        user.position = {
+            type: 'Point',
+            coordinates: [longitude, latitude]
+        };
+        
+        await user.save();
+
+        res.json({ 
+            message: 'Position mise à jour',
+            position: user.position 
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 export default router;
