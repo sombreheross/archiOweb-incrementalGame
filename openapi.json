@@ -1,0 +1,1026 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Documentation",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/users/register": {
+      "post": {
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "myUsername"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "myPassword"
+                  }
+                },
+                "required": ["username", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully"
+          },
+          "400": {
+            "description": "User already exists"
+          }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "summary": "Login a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "myUsername"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "myPassword"
+                  }
+                },
+                "required": ["username", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/users/protected": {
+      "get": {
+        "summary": "Access protected route",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully accessed protected route"
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required"
+          }
+        }
+      }
+    },
+    "/users/dynamo": {
+      "patch": {
+        "summary": "Update user's dynamo status",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dynamo": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                },
+                "required": ["dynamo"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dynamo status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Dynamo status updated"
+                    },
+                    "dynamo": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid dynamo value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resources": {
+      "get": {
+        "summary": "Get all resources",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Resource"
+                  }
+                },
+                "example": [
+                  {
+                    "name": "Gold",
+                    "price": 100
+                  },
+                  {
+                    "name": "Silver",
+                    "price": 50
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new resource",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Resource"
+              },
+              "example": {
+                "name": "Gold",
+                "price": 100
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                },
+                "example": {
+                  "name": "Gold",
+                  "price": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resources/{id}": {
+      "get": {
+        "summary": "Get a resource by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                },
+                "example": {
+                  "name": "Gold",
+                  "price": 100
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a resource by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                },
+                "example": {
+                  "name": "Gold",
+                  "price": 100
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a resource by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Resource"
+              },
+              "example": {
+                "name": "Gold",
+                "price": 150
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                },
+                "example": {
+                  "name": "Gold",
+                  "price": 150
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update the price of a resource by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "price": {
+                    "type": "number",
+                    "example": 200
+                  }
+                },
+                "required": ["price"]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource price updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                },
+                "example": {
+                  "name": "Gold",
+                  "price": 200
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Price is required"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      }
+    },
+    "/resources/{id}/resource": {
+      "get": {
+        "summary": "Get specific resource amount for authenticated user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource amount for user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resourceId": {
+                      "type": "string",
+                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Gold"
+                    },
+                    "price": {
+                      "type": "number",
+                      "example": 100
+                    },
+                    "amount": {
+                      "type": "number",
+                      "example": 10
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found for this user"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create new user-resource link",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User-resource link created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resourceId": {
+                      "type": "string",
+                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Gold"
+                    },
+                    "price": {
+                      "type": "number",
+                      "example": 100
+                    },
+                    "amount": {
+                      "type": "number",
+                      "example": 10
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Resource already linked to user or Resource not found"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update resource amount for authenticated user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 20
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource amount updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resourceId": {
+                      "type": "string",
+                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Gold"
+                    },
+                    "price": {
+                      "type": "number",
+                      "example": 100
+                    },
+                    "amount": {
+                      "type": "number",
+                      "example": 20
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource link not found"
+          }
+        }
+      }
+    },
+    "/upgrades": {
+      "get": {
+        "summary": "Get all upgrades",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of upgrades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Upgrade"
+                  }
+                },
+                "example": [
+                  {
+                    "name": "Speed Boost",
+                    "production": 2,
+                    "price": 500,
+                    "unlockLevel": null
+                  },
+                  {
+                    "name": "Double Production",
+                    "production": 2,
+                    "price": 1000,
+                    "unlockLevel": "Level 5"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upgrades/{id}": {
+      "get": {
+        "summary": "Get an upgrade by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upgrade found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Upgrade"
+                },
+                "example": {
+                  "name": "Speed Boost",
+                  "production": 2,
+                  "price": 500,
+                  "unlockLevel": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Upgrade not found"
+          }
+        }
+      }
+    },
+    "/upgrades/{id}/buy": {
+      "post": {
+        "summary": "Buy/unlock an upgrade",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "60c72b2f9b1e8a001c8e4c9a"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Upgrade bought/unlocked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "upgradeId": {
+                      "type": "string",
+                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Speed Boost"
+                    },
+                    "production": {
+                      "type": "number",
+                      "example": 2
+                    },
+                    "price": {
+                      "type": "number",
+                      "example": 500
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Upgrade already owned or Prerequisites not met"
+          },
+          "404": {
+            "description": "Upgrade not found"
+          }
+        }
+      }
+    },
+    "/resources/stats": {
+      "get": {
+        "summary": "Get resource statistics per user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserResourceStats"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resources/init": {
+      "post": {
+        "summary": "Initialize all resources for authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Resources initialized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string"
+                    },
+                    "resources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UserResource"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resources/user/resources": {
+      "get": {
+        "summary": "Get all resources with amounts for authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User resources retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UserResource"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upgrades/next": {
+      "get": {
+        "summary": "Get next available upgrades",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Next upgrades retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "nextAvailable": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "production": {
+                          "type": "number"
+                        },
+                        "price": {
+                          "type": "number"
+                        },
+                        "unlockLevel": {
+                          "type": "number",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "nextLocked": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "production": {
+                          "type": "number"
+                        },
+                        "price": {
+                          "type": "number"
+                        },
+                        "unlockLevel": {
+                          "type": "number",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Resource": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Gold"
+          },
+          "price": {
+            "type": "number",
+            "example": 100
+          }
+        },
+        "required": ["name", "price"]
+      },
+      "Upgrade": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Speed Boost"
+          },
+          "production": {
+            "type": "number",
+            "example": 2
+          },
+          "price": {
+            "type": "number",
+            "example": 500
+          },
+          "unlockLevel": {
+            "type": "string",
+            "nullable": true,
+            "example": "Level 5"
+          }
+        },
+        "required": ["name", "production", "price"]
+      },
+      "UserResource": {
+        "type": "object",
+        "properties": {
+          "resourceId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "UserResourceStats": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "totalResources": {
+            "type": "number"
+          },
+          "totalValue": {
+            "type": "number"
+          },
+          "resourceCount": {
+            "type": "number"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "value": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

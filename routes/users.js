@@ -46,6 +46,14 @@ router.post('/login', async (req, res, next) => {
         next(err);
     }
 });
+router.get('/', async (req, res, next) => {
+    try {
+        const users = await User.find();
+        res.status(200).json(users);
+    } catch (err) {
+        next(err);
+    }
+});
 
 // Exemple de route protégée
 router.get('/protected', protect, (req, res) => {

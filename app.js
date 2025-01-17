@@ -9,6 +9,10 @@ import usersRouter from "./routes/users.js";
 import resourcesRouter from "./routes/resources.js";
 import upgradesRouter from "./routes/upgrades.js";
 
+//pour la doc
+import fs from 'fs';
+import swaggerUi from 'swagger-ui-express';
+
 // Validate DATABASE_URL
 const databaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mongodb')
   ? process.env.DATABASE_URL
@@ -20,6 +24,11 @@ mongoose.connect(databaseUrl)
   .catch((err) => console.error('Failed to connect to MongoDB', err));
 
 const app = express();
+
+// Parse the OpenAPI document.
+const openApiDocument = JSON.parse(fs.readFileSync('./openapi.json', 'utf8'));
+// Serve the Swagger UI documentation.
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 // Middleware pour les headers
 import headers from './middleware/headers.js';
