@@ -26,7 +26,7 @@ mongoose.connect(databaseUrl)
 const app = express();
 
 // Parse the OpenAPI document.
-const openApiDocument = JSON.parse(fs.readFileSync('./openapi.json', 'utf8'));
+const openApiDocument = JSON.parse(fs.readFileSync(new URL('./openapi.json', import.meta.url), 'utf8'));
 // Serve the Swagger UI documentation.
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
