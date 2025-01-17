@@ -297,7 +297,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "204": {
             "description": "Resource deleted successfully",
             "content": {
               "application/json": {
