@@ -33,7 +33,7 @@
           "201": {
             "description": "User registered successfully"
           },
-          "400": {
+          "409": {
             "description": "User already exists"
           }
         }
@@ -80,7 +80,7 @@
               }
             }
           },
-          "400": {
+          "401": {
             "description": "Invalid credentials"
           },
           "404": {
@@ -250,7 +250,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "security": [
@@ -288,7 +288,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "security": [
@@ -326,7 +326,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "requestBody": {
@@ -378,7 +378,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "requestBody": {
@@ -438,7 +438,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "security": [
@@ -456,7 +456,7 @@
                   "properties": {
                     "resourceId": {
                       "type": "string",
-                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                      "example": "1"
                     },
                     "name": {
                       "type": "string",
@@ -490,7 +490,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "requestBody": {
@@ -524,7 +524,7 @@
                   "properties": {
                     "resourceId": {
                       "type": "string",
-                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                      "example": "1"
                     },
                     "name": {
                       "type": "string",
@@ -558,7 +558,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "requestBody": {
@@ -592,7 +592,7 @@
                   "properties": {
                     "resourceId": {
                       "type": "string",
-                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                      "example": "1"
                     },
                     "name": {
                       "type": "string",
@@ -620,6 +620,94 @@
     "/upgrades": {
       "get": {
         "summary": "Get all upgrades",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page (0 for no pagination)",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by",
+            "schema": {
+              "type": "string",
+              "default": "name"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Sort order (asc or desc)",
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "minProduction",
+            "in": "query",
+            "description": "Minimum production value",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxProduction",
+            "in": "query",
+            "description": "Maximum production value",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "description": "Minimum price value",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "description": "Maximum price value",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Filter by name (case-insensitive)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "owned",
+            "in": "query",
+            "description": "Filter by owned status",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -627,29 +715,38 @@
         ],
         "responses": {
           "200": {
-            "description": "A list of upgrades",
+            "description": "A list of upgrades with pagination info",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Upgrade"
+                  "type": "object",
+                  "properties": {
+                    "upgrades": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Upgrade"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "currentPage": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        },
+                        "totalItems": {
+                          "type": "integer"
+                        },
+                        "itemsPerPage": {
+                          "type": "integer"
+                        }
+                      }
+                    }
                   }
-                },
-                "example": [
-                  {
-                    "name": "Speed Boost",
-                    "production": 2,
-                    "price": 500,
-                    "unlockLevel": null
-                  },
-                  {
-                    "name": "Double Production",
-                    "production": 2,
-                    "price": 1000,
-                    "unlockLevel": "Level 5"
-                  }
-                ]
+                }
               }
             }
           }
@@ -667,7 +764,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "security": [
@@ -709,7 +806,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "60c72b2f9b1e8a001c8e4c9a"
+            "example": "1"
           }
         ],
         "security": [
@@ -727,7 +824,7 @@
                   "properties": {
                     "upgradeId": {
                       "type": "string",
-                      "example": "60c72b2f9b1e8a001c8e4c9a"
+                      "example": "1"
                     },
                     "name": {
                       "type": "string",
